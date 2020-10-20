@@ -1,0 +1,89 @@
+public class AddUsersToPublicGroups {
+    
+    public static Map<String, Id> addOrGetGroups(List<String> chatterGroupNames){
+        String grpType = 'Regular'; // Group Type='Regular' is public Group.
+        List<Group> lstGroup = new List<Group>(); //Returning List Group
+        Map<String, Id> mapGroupNameAndId = new Map<String,Id>();
+        List<Group> lstGroupToBeCreated = new List<Group>(); //If Group is not Exist creating Group using List
+        //Fetching all the Group based on Group Name
+        List<Group> lstGroupToFetch = new List <Group>([select id, name, type from group where name in :chatterGroupNames]);
+        //Declaring Map GroupName and Group
+        Map<String, Group> mapOfGroupNameandGroup = new Map<String, Group>();
+        //Assigning All the Group to Map
+        for(Group g : lstGroupToFetch){
+            mapOfGroupNameandGroup.put(g.name, g);
+        }
+       //Creating a List of New or Existing Group
+        for(String chatterGroupName :chatterGroupNames ){
+            if(mapOfGroupNameandGroup.containsKey(chatterGroupName)){
+                lstGroup.add(mapOfGroupNameandGroup.get(chatterGroupName));
+            }
+            if(!mapOfGroupNameandGroup.containsKey(chatterGroupName)){
+                Group g = new Group();
+            	g.Name = chatterGroupName;
+            	g.Type=grpType;
+                lstGroupToBeCreated.add(g);
+            }
+        }
+        if(lstGroupToBeCreated.size()>0){
+            try{
+          		insert lstGroupToBeCreated;
+          		lstGroup.addAll(lstGroupToBeCreated);       
+            }catch(DmlException e){
+                System.debug('The following exception has occurred on Inserting Group List: ' + e.getMessage());
+            }
+           
+        }
+        
+        for(Group g: lstGroup){
+            mapGroupNameAndId.put(g.name, g.Id);
+        }
+        return mapGroupNameAndId;
+    }
+    
+    
+    public static List<GroupMember> addGroupMembers(Map<id, CollaborationGroupMember> chatterGroupMember, Map<String, Id> GroupNamesandIds){
+       List<Group> lstGroup = new List<Group>([select id, Name from Group where id In:GroupNamesandIds.values()]);
+        List<GroupMember> lstGroupMemberToBeUpdate = new List<GroupMember>();
+       List<CollaborationGroupMember> lstChatterGroupMember = new List<CollaborationGroupMember>();
+       lstChatterGroupMember = [select id, collaborationGroup.Name, MemberId from CollaborationGroupMember where id in :chatterGroupMember.keySet() ];
+        //System.debug('lstChatterGroupMember is : '+lstChatterGroupMember.size());
+        List<GroupMember> lstExistingGroupMember = new List<GroupMember>();
+        lstExistingGroupMember = [select id, GroupId, Group.name, UserOrGroupId from GroupMember where GroupId in :GroupNamesandIds.values() ];
+        //System.debug('lstExistingGroupMember is : '+lstExistingGroupMember.size());
+        Boolean GroupNotExist = lstExistingGroupMember.isEmpty();
+        //If there are no Existing Group, then creating new Group List
+        if(GroupNotExist){
+             for(Group g:lstGroup){
+                for(collaborationGroupmember cgm :lstChatterGroupMember){
+                    if(GroupNamesandIds.get(cgm.collaborationGroup.Name)== g.id){
+                       GroupMember gm = new GroupMember();
+                       gm.UserOrGroupId= cgm.MemberId;
+                    	gm.GroupId =g.Id;
+                    lstGroupMemberToBeUpdate.add(gm); 
+                    }
+                }
+            }
+           
+        }
+       	//If there are any Group Available or new Group, fetching or creating Group List
+        if(lstExistingGroupMember.size()>0){
+            
+        	for(GroupMember gm: lstExistingGroupMember){
+            for(collaborationGroupmember cgm: lstChatterGroupMember){
+                if(cgm.collaborationGroup.Name == gm.Group.name){
+                    if(cgm.MemberId !=gm.UserOrGroupId){
+                        GroupMember gms= new GroupMember();
+                        gms.UserOrGroupId= cgm.MemberId;
+                        gms.GroupId =String.valueOf(GroupNamesandIds.get(cgm.collaborationGroup.Name));
+                        lstGroupMemberToBeUpdate.add(gms);
+                    }
+                }
+            }
+        	}
+        }
+        System.debug('@@@@@'+lstGroupMemberToBeUpdate.size());
+        return lstGroupMemberToBeUpdate;
+    }
+   
+}
