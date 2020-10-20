@@ -1,0 +1,14 @@
+public class DeletingGroupMemberUsingList implements Queueable {
+ 	public List<GroupMember> lstGroupMember;
+    public DeletingGroupMemberUsingList(List<GroupMember> lstGroupMember){
+        this.lstGroupMember=lstGroupMember;
+    }
+    public void execute(QueueableContext context){
+        try {
+           delete lstGroupMember;
+        } catch(DmlException e) {
+            System.debug('The following exception has occurred during deleting Group Member using Queueable: ' + e.getMessage());
+        }
+        
+    }
+}
