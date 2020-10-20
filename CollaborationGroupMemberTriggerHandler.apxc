@@ -22,11 +22,11 @@ public class CollaborationGroupMemberTriggerHandler {
 	// 
     public void OnAfterInsert(map<id, CollaborationGroupMember> mapNew) {
        	
-        List<GroupMember> publicGroupMemberToBeInsert = new List<GroupMember>(); 
-        Map<Id, String> chatterMemberAndChatterGroupId = new Map<Id, String>(); 
+        List<GroupMember> publicGroupMemberToBeInsert = new List<GroupMember>();
+        Map<Id, String> chatterMemberAndChatterGroupId = new Map<Id, String>();
         List<String> groupNames = new List<String>();
         List<collaborationGroup> lstCollaborationGroup = new List<collaborationGroup>();
-	for(CollaborationGroupMember cgm: mapNew.values()){
+		for(CollaborationGroupMember cgm: mapNew.values()){
             chatterMemberAndChatterGroupId.put(cgm.Id, cgm.CollaborationGroupId);
             
         }
@@ -40,14 +40,12 @@ public class CollaborationGroupMemberTriggerHandler {
         }
         Map<String, Id> mapGroupNameAndId = new Map<String, Id> ();
         if(groupNames.size()>0){
-		
         	mapGroupNameAndId = AddUsersToPublicGroups.addOrGetGroups(groupNames);
-		//Getting the List of GroupMember to be created
-		publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
-           //Calling the Queuable Class to create Group Members.
-	   if(publicGroupMemberToBeInsert.size()>0){
+            publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
+            //Calling the Queuable Class to create Group Members.
+            if(publicGroupMemberToBeInsert.size()>0){
                 ID jobID = System.enqueueJob(new InsertGroupMemberUsingList(publicGroupMemberToBeInsert));
-                System.debug('Queuable Job id : '+ jobID);
+                System.debug('Queuable Job id for Inserting Group Member: '+ jobID);
             }
         }
 		        
@@ -87,12 +85,12 @@ public class CollaborationGroupMemberTriggerHandler {
                 }
             }
         }
-        
-        try{
-        	delete lstGroupMemberToBeRemoved;    
-        }catch(DMLException e){
-            System.debug('The following exception has occurred on Delete Group Member: ' + e.getMessage());
-        }  
+        //Calling the Queueable Class to Remove the Group Member
+        if(lstGroupMemberToBeRemoved.size()>0){
+            ID jobID = System.enqueueJob(new DeletingGroupMemberUsingList(lstGroupMemberToBeRemoved));
+             System.debug('Queuable Job id for removing the Group Member: '+ jobID);
+        }
+      
     }
 	//
 	// On After Delete 
