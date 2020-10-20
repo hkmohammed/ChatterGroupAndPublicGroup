@@ -1,0 +1,14 @@
+public class InsertGroupMemberUsingList implements Queueable {
+    public List<GroupMember> lstGroupMember;
+    public InsertGroupMemberUsingList(List<GroupMember> lstGroupMember){
+        this.lstGroupMember=lstGroupMember;
+    }
+    public void execute(QueueableContext context){
+        try {
+           insert lstGroupMember;
+        } catch(DmlException e) {
+            System.debug('The following exception has occurred during Inserting Group Member using Queueable: ' + e.getMessage());
+        }
+        
+    }
+}
