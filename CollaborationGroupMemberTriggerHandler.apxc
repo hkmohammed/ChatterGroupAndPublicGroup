@@ -1,0 +1,107 @@
+public class CollaborationGroupMemberTriggerHandler {
+	// 
+	// custom trigger handler setup to handler all triggers received on on Chatter Group (CollaborationGroup)
+	//
+    private boolean myIsExecuting = false;
+    private integer BatchSize = 0;
+	//
+	// constructor
+	//
+    public CollaborationGroupMemberTriggerHandler(boolean isExecuting, integer size) {
+        myIsExecuting = isExecuting;
+        BatchSize = size;
+    }
+	//
+	// On Before Insert 
+	//   
+    public void OnBeforeInsert(list<CollaborationGroupMember> lstNew) {
+        
+    } 
+	//
+	// On After Insert 
+	// 
+    public void OnAfterInsert(map<id, CollaborationGroupMember> mapNew) {
+       	
+        List<GroupMember> publicGroupMemberToBeInsert = new List<GroupMember>();
+        Map<Id, String> chatterMemberAndChatterGroupId = new Map<Id, String>();
+        List<String> groupNames = new List<String>();
+        List<collaborationGroup> lstCollaborationGroup = new List<collaborationGroup>();
+		for(CollaborationGroupMember cgm: mapNew.values()){
+            chatterMemberAndChatterGroupId.put(cgm.Id, cgm.CollaborationGroupId);
+            
+        }
+        lstCollaborationGroup =[select id, name from collaborationGroup where id IN:chatterMemberAndChatterGroupId.values()];
+       
+        if(lstCollaborationGroup.size()>0){
+          for(collaborationGroup cg: lstCollaborationGroup){
+            String s = String.valueOf(cg.Name);
+            groupNames.add(s);
+        	} 
+        }
+        Map<String, Id> mapGroupNameAndId = new Map<String, Id> ();
+        if(groupNames.size()>0){
+        	mapGroupNameAndId = AddUsersToPublicGroups.addOrGetGroups(groupNames);
+            publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
+            if(publicGroupMemberToBeInsert.size()>0){
+                ID jobID = System.enqueueJob(new InsertGroupMemberUsingList(publicGroupMemberToBeInsert));
+                System.debug('Queuable Job id : '+ jobID);
+            }
+        }
+		        
+    }
+	//
+	// On Before Update 
+	//    
+    public void OnBeforeUpdate(map<id, CollaborationGroupMember> mapOld, map<id, CollaborationGroupMember> mapNew) { 
+        
+        
+    }
+	//
+	// On After Update
+	//
+    public void OnAfterUpdate(map<id, CollaborationGroupMember> mapOld, map<id, CollaborationGroupMember> mapNew) {
+      
+    }
+	//
+	// On Before Delete 
+	//
+    public void OnBeforeDelete(map<ID, CollaborationGroupMember> mapOld) {
+      //Getting the List of chatter Group Member with Chatter Group Name
+      List<collaborationGroupMember> lstChatterGrpMem = new List<CollaborationGroupMember>([Select Id, collaborationGroup.Name, MemberId, collaborationGroupId from collaborationGroupMember where Id In :mapOld.keySet() ]);
+      Set<String> groupName = new Set<String>(); // Storing Chatter GroupName 
+      List<GroupMember> lstGroupMemberToBeRemoved= new List<GroupMember>(); //List for Removing the Group Member
+        //Assinging Chatter Group Name to List of String GroupName
+        for(collaborationGroupMember cgm : lstChatterGrpMem){
+          groupName.add(cgm.collaborationGroup.Name);
+         }
+        //Fetching all the Group Member with respective data of List GroupName 
+      	List<GroupMember> lstGroupMember =  new List<GroupMember>([Select Id, Group.name, userorGroupId from GroupMember where Group.name In: groupName ]);
+        //Seregrating the Member to be deleted from the Fetch GroupMember Data
+        for(groupMember gm : lstGroupMember){
+            for(collaborationGroupMember cgm :lstChatterGrpMem ){
+                if(cgm.MemberId == gm.UserOrGroupId && cgm.collaborationGroup.Name==gm.Group.name){
+                  lstGroupMemberToBeRemoved.add(gm);  
+                }
+            }
+        }
+        
+        try{
+        	delete lstGroupMemberToBeRemoved;    
+        }catch(DMLException e){
+            System.debug('The following exception has occurred on Delete Group Member: ' + e.getMessage());
+        }  
+    }
+	//
+	// On After Delete 
+	//
+    public void OnAfterDelete(map<ID, CollaborationGroupMember> mapOld) {
+     
+    }
+	//
+	// On Undelete
+	//
+    public void OnUndelete(list<CollaborationGroupMember> lstNew) {
+        
+    }
+    
+}
