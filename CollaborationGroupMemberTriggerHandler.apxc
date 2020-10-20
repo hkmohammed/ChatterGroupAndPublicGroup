@@ -40,7 +40,7 @@ public class CollaborationGroupMemberTriggerHandler {
         }
         Map<String, Id> mapGroupNameAndId = new Map<String, Id> ();
         if(groupNames.size()>0){
-		//Creating or Getting the Groups
+		
         	mapGroupNameAndId = AddUsersToPublicGroups.addOrGetGroups(groupNames);
 		//Getting the List of GroupMember to be created
 		publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
