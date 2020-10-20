@@ -22,11 +22,11 @@ public class CollaborationGroupMemberTriggerHandler {
 	// 
     public void OnAfterInsert(map<id, CollaborationGroupMember> mapNew) {
        	
-        List<GroupMember> publicGroupMemberToBeInsert = new List<GroupMember>();
-        Map<Id, String> chatterMemberAndChatterGroupId = new Map<Id, String>();
+        List<GroupMember> publicGroupMemberToBeInsert = new List<GroupMember>(); 
+        Map<Id, String> chatterMemberAndChatterGroupId = new Map<Id, String>(); 
         List<String> groupNames = new List<String>();
         List<collaborationGroup> lstCollaborationGroup = new List<collaborationGroup>();
-		for(CollaborationGroupMember cgm: mapNew.values()){
+	for(CollaborationGroupMember cgm: mapNew.values()){
             chatterMemberAndChatterGroupId.put(cgm.Id, cgm.CollaborationGroupId);
             
         }
@@ -40,9 +40,12 @@ public class CollaborationGroupMemberTriggerHandler {
         }
         Map<String, Id> mapGroupNameAndId = new Map<String, Id> ();
         if(groupNames.size()>0){
+		//Creating or Getting the Groups
         	mapGroupNameAndId = AddUsersToPublicGroups.addOrGetGroups(groupNames);
-            publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
-            if(publicGroupMemberToBeInsert.size()>0){
+		//Getting the List of GroupMember to be created
+		publicGroupMemberToBeInsert=AddUsersToPublicGroups.addGroupMembers(mapNew,mapGroupNameAndId);
+           //Calling the Queuable Class to create Group Members.
+	   if(publicGroupMemberToBeInsert.size()>0){
                 ID jobID = System.enqueueJob(new InsertGroupMemberUsingList(publicGroupMemberToBeInsert));
                 System.debug('Queuable Job id : '+ jobID);
             }
