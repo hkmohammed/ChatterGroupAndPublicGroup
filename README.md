@@ -8,3 +8,6 @@ Trigger handler for the object collaborationGroupMember (CollaborationGroupMembe
 Getting or Adding Group or Group Member with help of Apex Class ( AddUsersToPublicGroups)
 
 Avoiding the Mix DML error while inserting the GroupMember with the help of Queuable Apex Class ( InsertGroupMemberUsingList)
+
+
+Updated branch for 
